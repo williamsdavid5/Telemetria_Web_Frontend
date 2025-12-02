@@ -100,9 +100,26 @@ function MapaClickReset({ setViagemSelecionada }) {
 function ControladorDesenho({
     layerRefs,
     setNovaCercaCoordenadas,
+    setCoordenadas,
+    onReady
 }) {
     const map = useMap();
+    const poligoneref = useRef(null);
     const [pontosMarcados, setPontosMarcados] = useState([]);
+
+    const ativarDesenho = () => {
+        const drawPolygon = new L.Draw.Polygon(map);
+        drawPolygon.enable();
+    };
+
+    useEffect(() => {
+        if (!map) return;
+        if (onReady) {
+            onReady({
+                ativarDesenho
+            });
+        }
+    }, [map]);
 
 
     useEffect(() => {
@@ -113,52 +130,55 @@ function ControladorDesenho({
 
         const drawControl = new L.Control.Draw({
             draw: {
-                polygon: true,
+                polygon: false,
                 polyline: false,
                 rectangle: false,
                 circle: false,
-                marker: false, //mudar caso queira marcar pontos e resgatar cooredenadas
+                marker: false,
                 circlemarker: false,
-            },
-            edit: {
-                featureGroup: drawnItems
             }
         });
 
         map.addControl(drawControl);
         map._drawControlAdded = true;
-
         map._drawnItems = drawnItems;
 
-        L.Draw.Marker.prototype.options.icon = pontoPercursoIcon;
 
         map.on(L.Draw.Event.CREATED, function (event) {
             const layer = event.layer;
 
             if (event.layerType === 'polygon') {
+
                 const latlngs = layer.getLatLngs()[0];
                 const coordenadas = latlngs.map(coord => [coord.lat, coord.lng]);
+
+                if (poligoneref.current) {
+                    map.removeLayer(poligoneref.current);
+                }
+
+                layer.addTo(map);
+                poligoneref.current = layer;
+
                 setNovaCercaCoordenadas(coordenadas);
-                setModalVisivel(true);
+                setCoordenadas(coordenadas);
             }
 
             if (event.layerType === 'marker') {
                 const { lat, lng } = layer.getLatLng();
                 setPontosMarcados(prev => [...prev, [lat, lng]]);
                 drawnItems.addLayer(layer);
-                console.log(pontosMarcados);
             }
         });
 
     }, [map]);
 
-    //para armazenar os pontos (apenas para criar dados falsos...)
     useEffect(() => {
         console.log('Pontos marcados atualizados:', pontosMarcados);
     }, [pontosMarcados]);
 
     return null;
 };
+
 
 function abrirNoMaps(lat, lng) {
     if (!lat || !lng) {
@@ -198,10 +218,9 @@ async function compartilharLocalizacao(lat, lng) {
 }
 
 
-export default function MapaBuscar({ }) {
+export default function MapaBuscar({ setCoordenadas, setDesenhar }) {
 
     const layerRefs = useRef({});
-    const [modalVisivel, setModalVisivel] = useState(false);
     const [novaCercaCoordenadas, setNovaCercaCoordenadas] = useState(null);
     const [camadas, setCamadas] = useState(false);
     const [viagens, setViagens] = useState(null);
@@ -237,6 +256,8 @@ export default function MapaBuscar({ }) {
                 <ControladorDesenho
                     layerRefs={layerRefs}
                     setNovaCercaCoordenadas={setNovaCercaCoordenadas}
+                    setCoordenadas={setCoordenadas}
+                    onReady={setDesenhar}
                 />
 
             </MapContainer>
