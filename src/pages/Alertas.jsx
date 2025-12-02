@@ -14,8 +14,8 @@ export default function Alertas() {
 
     // para a pesquisa entre os registros
     const [termoBusca, setTermoBusca] = useState('');
-    const [dataInicio, setDataInicio] = useState({ dia: '', mes: '' });
-    const [dataFim, setDataFim] = useState({ dia: '', mes: '' });
+    const [dataInicio, setDataInicio] = useState('');
+    const [dataFim, setDataFim] = useState('');
 
     // para a lógica de seleção de viagens na lista lateral
     const [viagemSelecionada, setViagemSelecionada] = useState(null);
@@ -43,17 +43,32 @@ export default function Alertas() {
 
     // para a logica de pesquisar por periodo
     function dentroDoIntervalo(dataIso) {
-        if (!dataInicio.dia || !dataInicio.mes || !dataFim.dia || !dataFim.mes) return true;
+        if (!dataInicio || !dataFim) return true;
 
         const data = new Date(dataIso);
-        const dia = data.getDate();
-        const mes = data.getMonth() + 1;
+        const dataAlerta = data.getTime();
 
-        const dataAlerta = mes * 100 + dia;
-        const dataInicioNum = parseInt(dataInicio.mes) * 100 + parseInt(dataInicio.dia);
-        const dataFimNum = parseInt(dataFim.mes) * 100 + parseInt(dataFim.dia);
+        const [diaInicio, mesInicio, anoInicio] = dataInicio.split('/').map(Number);
+        const [diaFim, mesFim, anoFim] = dataFim.split('/').map(Number);
 
-        return dataAlerta >= dataInicioNum && dataAlerta <= dataFimNum;
+        const dataInicioObj = new Date(anoInicio, mesInicio - 1, diaInicio, 0, 0, 0);
+        const dataFimObj = new Date(anoFim, mesFim - 1, diaFim, 23, 59, 59);
+
+        return dataAlerta >= dataInicioObj.getTime() && dataAlerta <= dataFimObj.getTime();
+    }
+
+    //vaila a data digitada pelo usuário
+    function validarData(data) {
+        if (!data) return false;
+        const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+        if (!regex.test(data)) return false;
+
+        const [dia, mes, ano] = data.split('/').map(Number);
+        if (mes < 1 || mes > 12) return false;
+        if (dia < 1 || dia > 31) return false;
+
+        const diasNoMes = new Date(ano, mes, 0).getDate();
+        return dia <= diasNoMes;
     }
 
     //para formar a data da forma como vem do BD
@@ -94,35 +109,41 @@ export default function Alertas() {
                             <div className="pesquisaPorData">
                                 <div className="pesquisaPorDataInputs">
                                     <input
-                                        type="number"
-                                        placeholder="DD"
-                                        className="inputdata"
-                                        value={dataInicio.dia}
-                                        onChange={e => setDataInicio({ ...dataInicio, dia: e.target.value })}
+                                        type="text"
+                                        placeholder="dd/mm/aaaa"
+                                        className="inputdataCompleto"
+                                        value={dataInicio}
+                                        onChange={e => {
+                                            const valor = e.target.value;
+                                            let valorFormatado = valor.replace(/\D/g, '');
+                                            if (valorFormatado.length > 2) {
+                                                valorFormatado = valorFormatado.substring(0, 2) + '/' + valorFormatado.substring(2);
+                                            }
+                                            if (valorFormatado.length > 5) {
+                                                valorFormatado = valorFormatado.substring(0, 5) + '/' + valorFormatado.substring(5, 9);
+                                            }
+                                            setDataInicio(valorFormatado);
+                                        }}
+                                        maxLength={10}
                                     />
+                                    <span>até</span>
                                     <input
-                                        type="number"
-                                        placeholder="MM"
-                                        className="inputdata"
-                                        value={dataInicio.mes}
-                                        onChange={e => setDataInicio({ ...dataInicio, mes: e.target.value })}
-                                    />
-                                </div>
-                                <p>a</p>
-                                <div className="pesquisaPorDataInputs">
-                                    <input
-                                        type="number"
-                                        placeholder="DD"
-                                        className="inputdata"
-                                        value={dataFim.dia}
-                                        onChange={e => setDataFim({ ...dataFim, dia: e.target.value })}
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="MM"
-                                        className="inputdata"
-                                        value={dataFim.mes}
-                                        onChange={e => setDataFim({ ...dataFim, mes: e.target.value })}
+                                        type="text"
+                                        placeholder="dd/mm/aaaa"
+                                        className="inputdataCompleto"
+                                        value={dataFim}
+                                        onChange={e => {
+                                            const valor = e.target.value;
+                                            let valorFormatado = valor.replace(/\D/g, '');
+                                            if (valorFormatado.length > 2) {
+                                                valorFormatado = valorFormatado.substring(0, 2) + '/' + valorFormatado.substring(2);
+                                            }
+                                            if (valorFormatado.length > 5) {
+                                                valorFormatado = valorFormatado.substring(0, 5) + '/' + valorFormatado.substring(5, 9);
+                                            }
+                                            setDataFim(valorFormatado);
+                                        }}
+                                        maxLength={10}
                                     />
                                 </div>
                             </div>

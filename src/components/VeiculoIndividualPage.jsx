@@ -393,6 +393,13 @@ export default function VeiculoIndividualPage({ veiculoId, setPaginaVeiculoIndiv
                                                 onClick={() => {
                                                     setAlertaSelecionado(alerta);
                                                     setViagemSelecionada(null);
+
+                                                    const viagemRelacionada = veiculo.viagens.find(v =>
+                                                        v.alertas?.some(a => a.id === alerta.id)
+                                                    );
+                                                    if (viagemRelacionada) {
+                                                        setViagemSelecionada(viagemRelacionada);
+                                                    }
                                                 }}
                                             >
                                                 <p><b>{alerta.tipo}</b></p>

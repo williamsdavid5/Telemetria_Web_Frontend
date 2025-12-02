@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Cercas from './pages/Cercas';
+import Buscar from './pages/Buscar';
 import Motoristas from './pages/Motoristas'
 import Alertas from './pages/Alertas';
 import Veiculos from './pages/Veículos';
@@ -19,6 +20,7 @@ function App() {
           <Route path='/veiculos' element={<Veiculos />} />
           <Route path='/alertas' element={<Alertas />} />
           <Route path='/registros' element={<Registros />} />
+          <Route path='/buscar' element={<Buscar />} />
         </Routes>
       </BrowserRouter>
     </>
