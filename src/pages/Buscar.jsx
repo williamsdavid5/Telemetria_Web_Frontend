@@ -63,6 +63,26 @@ export default function Buscar() {
         }
     }
 
+    function limpar() {
+        // setCoordenadas(null);
+        setDataInicio('');
+        setDataFim('');
+        setVIagensFiltradas([]);
+    }
+
+    function formatarDataHora(isoString) {
+        const data = new Date(isoString);
+
+        const dia = String(data.getUTCDate()).padStart(2, '0');
+        const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+        const ano = data.getUTCFullYear();
+
+        const hora = String(data.getUTCHours()).padStart(2, '0');
+        const minuto = String(data.getUTCMinutes()).padStart(2, '0');
+
+        return `${dia}/${mes}/${ano} - ${hora}:${minuto}`;
+    }
+
     // useEffect(() => {
     //     console.log("coordenadas: ", coordenadas);
     //     console.log("Data inicio: ", dataInicio);
@@ -121,13 +141,38 @@ export default function Buscar() {
                             onClick={buscar}
                             disabled={carregando || !coordenadas}
                         >Pesquisar</button>
+                        <button
+                            className="botaoSelecionarArea botaoLimpar"
+                            onClick={limpar}
+                        >Limpar</button>
                     </div>
-                    <div className="divRegistros">
+                    {/* <div className="divRegistros">
                         {carregando && (
                             <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                                 <img src={LoadingGif} alt="" style={{ width: '40px', marginTop: '15px' }} />
                             </div>
                         )}
+                    </div> */}
+                    <div className="divRegistros">
+                        {carregando ? (
+                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                <img src={LoadingGif} alt="" style={{ width: '40px', marginTop: '15px' }} />
+                            </div>
+                        ) : viagensFiltradas.length > 0 ? (
+                            viagensFiltradas.map(viagem => (
+                                <div
+                                    className="registroItemLista"
+                                    key={viagem.id}
+                                >
+                                    <p><b>Início: </b>{formatarDataHora(viagem.data_viagem)}</p>
+                                    <p><b>Último registro: </b>{formatarDataHora(viagem.ultimo_registro)}</p>
+                                    <p><b>Motorista: </b>{viagem.nome_motorista}</p>
+                                    <p><b>Veículo: </b>{viagem.identificador_veiculo}</p>
+                                    <p><b>Modelo: </b>{viagem.modelo_veiculo}</p>
+                                    <p><b>Alertas: </b>{viagem.quantidade_alertas}</p>
+                                </div>
+                            ))
+                        ) : null}
                     </div>
                 </div>
                 <div className="direitaAlertas">
