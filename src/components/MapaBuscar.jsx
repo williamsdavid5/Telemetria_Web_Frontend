@@ -13,6 +13,8 @@ import veiculoIcon from '../assets/veiculoIcon.png';
 import pontoIcon from '../assets/pontoIcon.png'
 import startIcon from '../assets/startIcon.png';
 
+import loadingGif from '../assets/loadingGif.gif'
+
 import mapProviders from '../utils/mapProviders';
 
 import ModalCerca from './ModalCerca';
@@ -172,10 +174,6 @@ function ControladorDesenho({
 
     }, [map]);
 
-    useEffect(() => {
-        console.log('Pontos marcados atualizados:', pontosMarcados);
-    }, [pontosMarcados]);
-
     return null;
 };
 
@@ -218,7 +216,7 @@ async function compartilharLocalizacao(lat, lng) {
 }
 
 
-export default function MapaBuscar({ setCoordenadas, setDesenhar }) {
+export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
 
     const layerRefs = useRef({});
     const [novaCercaCoordenadas, setNovaCercaCoordenadas] = useState(null);
@@ -226,8 +224,61 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar }) {
     const [viagens, setViagens] = useState(null);
     const [viagemSelecionada, setVIagemSelecionada] = useState(null);
 
+    const [carregandoViagem, setCarregandoViagem] = useState(false);
+
+    const [registroViagem, setRegistroViagem] = useState(null);
+    // const [posicaoAtual, setPosicaoAtual] = useState([-3.76, -49.67]);
+    const [posicaoAtual, setPosicaoAtual] = useState(null);
     const [currentProvider, setCurrentProvider] = useState(mapProviders.default);
 
+    useEffect(() => {
+        async function carregarDetalhesViagem() {
+            if (viagem?.id) {
+                try {
+                    const resposta = await api.get(`/viagens/${viagem.id}`);
+                    setRegistroViagem(resposta.data);
+
+                    if (resposta.data?.registros?.length > 0) {
+                        const ultimo = resposta.data.registros.at(-1);
+                        const coords = [parseFloat(ultimo.latitude), parseFloat(ultimo.longitude)];
+                        setPosicaoAtual(coords);
+                    }
+                } catch (err) {
+                    console.log('Erro ao carregar detalhes da viagem:', err);
+                }
+            } else {
+                setRegistroViagem(null);
+            }
+        }
+
+        carregarDetalhesViagem();
+    }, [viagem]);
+
+    useEffect(() => {
+        async function carregarDetalhesViagem() {
+            if (viagem?.id) {
+                try {
+                    setCarregandoViagem(true);
+                    const resposta = await api.get(`/viagens/${viagem.id}`);
+                    setRegistroViagem(resposta.data);
+
+                    if (resposta.data?.registros?.length > 0) {
+                        const ultimo = resposta.data.registros.at(-1);
+                        const coords = [parseFloat(ultimo.latitude), parseFloat(ultimo.longitude)];
+                        setPosicaoAtual(coords);
+                    }
+                } catch (err) {
+                    console.log('Erro ao carregar detalhes da viagem:', err);
+                } finally {
+                    setCarregandoViagem(false);
+                }
+            } else {
+                setRegistroViagem(null);
+            }
+        }
+
+        carregarDetalhesViagem();
+    }, [viagem]);
 
     function formatarDataHora(isoString) {
         const data = new Date(isoString);
@@ -242,23 +293,111 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar }) {
         return `${dia}/${mes}/${ano} - ${hora}:${minuto}`;
     }
 
+    function Centralizar({ coordenadas }) {
+        const map = useMap();
+        useEffect(() => {
+            if (coordenadas) {
+                map.setView(coordenadas, 16);
+            }
+        }, [coordenadas]);
+        return null;
+    }
+
+
+    // useEffect(() => {
+    //     console.log("viagem recebida da tela:", viagem);
+    // });
 
     return (
         <div className='mapa'>
-            <MapContainer center={[-3.76, -49.67]} zoom={15} style={{ height: '100vh', width: '100%' }}>
+            <MapContainer center={posicaoAtual || [-3.76, -49.67]} zoom={15} style={{ height: '100vh', width: '100%' }}>
                 <TileLayer
                     key={currentProvider}
                     url={mapProviders[currentProvider].url}
                     maxZoom={mapProviders[currentProvider].maxZoom}
                     attribution={mapProviders[currentProvider].attribution}
                 />
-
+                <Centralizar coordenadas={posicaoAtual} />
                 <ControladorDesenho
                     layerRefs={layerRefs}
                     setNovaCercaCoordenadas={setNovaCercaCoordenadas}
                     setCoordenadas={setCoordenadas}
                     onReady={setDesenhar}
                 />
+
+                {registroViagem?.registros?.length > 0 && (() => {
+                    const pontosFiltrados = registroViagem.registros.filter(p => p.latitude && p.longitude);
+
+                    return (
+                        <>
+
+                            {pontosFiltrados.map((ponto, index) => {
+                                const position = [parseFloat(ponto.latitude), parseFloat(ponto.longitude)];
+                                const horario = formatarDataHora(ponto.timestamp);
+
+                                const iconToUse = index === 0 ? starPercursotIcon : pontoPercursoIcon;
+
+                                return (
+                                    <Marker key={ponto.id || index} position={position} icon={iconToUse}>
+                                        <Popup>
+                                            <div>
+                                                {index === 0 && (
+                                                    <>
+                                                        <b style={{ color: 'green' }}>📍 INÍCIO DO PERCURSO</b><br />
+                                                    </>
+                                                )}
+                                                <b>Velocidade:</b> {parseFloat(ponto.velocidade || 0).toFixed(1)} km/h<br />
+                                                <b>Limite:</b> {parseFloat(ponto.limite_aplicado || 0).toFixed(1)} km/h<br />
+                                                <b>Horário:</b> {horario}<br />
+                                                {ponto.chuva ? '🌧️ Chuva detectada' : '☀️ Tempo seco'}
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
+
+                            <LinhaComSetas pontos={pontosFiltrados} />
+
+                            {pontosFiltrados.length > 0 && (
+                                <Marker
+                                    position={[
+                                        parseFloat(pontosFiltrados[pontosFiltrados.length - 1].latitude),
+                                        parseFloat(pontosFiltrados[pontosFiltrados.length - 1].longitude)
+                                    ]}
+                                    icon={vehicleIcon}
+                                >
+                                    <Popup>
+                                        <div>
+                                            <b>🚗 VEÍCULO</b><br />
+                                            <b>Posição atual do veículo</b><br />
+                                            <b>Motorista:</b> {registroViagem?.nome_motorista || 'Não informado'}<br />
+                                            <b>Veículo:</b> {registroViagem?.modelo_veiculo || 'Não informado'} - {registroViagem?.identificador_veiculo || 'Não informado'}<br />
+                                            <b>Última atualização:</b> {formatarDataHora(pontosFiltrados[pontosFiltrados.length - 1].timestamp)}
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            )}
+                        </>
+                    );
+                })()}
+
+                {registroViagem?.alertas?.length > 0 && registroViagem.alertas.map((alerta, index) => {
+                    const pontosAlerta = alerta.registros?.map(r => [parseFloat(r.latitude), parseFloat(r.longitude)]);
+
+                    return (
+                        <div key={index}>
+
+                            {pontosAlerta?.length > 1 && (
+                                <Polyline
+                                    positions={pontosAlerta}
+                                    color="red"
+                                    weight={4}
+                                    opacity={0.8}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
 
             </MapContainer>
 
@@ -281,6 +420,15 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar }) {
                         ))}
                 </select>
             </div>
+
+
+
+            {carregandoViagem && (
+                <div className='divCarregando'>
+                    <img src={loadingGif} alt="" />
+                    <p> <b>Carregando dados, aguarde...</b> </p>
+                </div>
+            )}
 
         </div>
     );

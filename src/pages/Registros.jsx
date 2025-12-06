@@ -293,66 +293,6 @@ export default function Registros() {
                                     />
                                 </div>
                             </div>
-                            {/* <div className="pesquisaPorData">
-                                <div className="pesquisaPorDataInputs">
-                                    <input
-                                        type="number"
-                                        placeholder="DD"
-                                        className="inputdata"
-                                        value={dataInicio.dia}
-                                        onChange={e => {
-                                            const novo = { ...dataInicio, dia: e.target.value };
-                                            setDataInicio(novo);
-                                            const inicioISO = gerarDataISO(novo);
-                                            const fimISO = gerarDataISO(dataFim);
-                                            if (inicioISO && fimISO) buscarRegistros(termoBusca, inicioISO, fimISO);
-                                        }}
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="MM"
-                                        className="inputdata"
-                                        value={dataInicio.mes}
-                                        onChange={e => {
-                                            const novo = { ...dataInicio, mes: e.target.value };
-                                            setDataInicio(novo);
-                                            const inicioISO = gerarDataISO(novo);
-                                            const fimISO = gerarDataISO(dataFim);
-                                            if (inicioISO && fimISO) buscarRegistros(termoBusca, inicioISO, fimISO);
-                                        }}
-                                    />
-                                </div>
-                                <p>a</p>
-                                <div className="pesquisaPorDataInputs">
-                                    <input
-                                        type="number"
-                                        placeholder="DD"
-                                        className="inputdata"
-                                        value={dataFim.dia}
-                                        onChange={e => {
-                                            const novo = { ...dataFim, dia: e.target.value };
-                                            setDataFim(novo);
-                                            const inicioISO = gerarDataISO(dataInicio);
-                                            const fimISO = gerarDataISO(novo);
-                                            if (inicioISO && fimISO) buscarRegistros(termoBusca, inicioISO, fimISO);
-                                        }}
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="MM"
-                                        className="inputdata"
-                                        value={dataFim.mes}
-                                        onChange={e => {
-                                            const novo = { ...dataFim, mes: e.target.value };
-                                            setDataFim(novo);
-                                            const inicioISO = gerarDataISO(dataInicio);
-                                            const fimISO = gerarDataISO(novo);
-                                            if (inicioISO && fimISO) buscarRegistros(termoBusca, inicioISO, fimISO);
-                                        }}
-                                    />
-                                </div>
-                            </div> */}
-
                         </div>
                         <div className="divRegistros">
                             {registros

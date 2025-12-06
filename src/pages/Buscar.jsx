@@ -14,6 +14,7 @@ export default function Buscar() {
     const [dataFim, setDataFim] = useState('');
     const [viagensFiltradas, setVIagensFiltradas] = useState([]);
     const [carregando, setCarregando] = useState(false);
+    const [viagemSelecionada, setViagemSelecionada] = useState();
 
     function validarData(data) {
         if (!data) return false;
@@ -54,7 +55,7 @@ export default function Buscar() {
             });
 
             setVIagensFiltradas(resposta.data);
-            console.log('Viagens encontradas:', resposta.data);
+
         } catch (err) {
             console.error('Erro ao buscar viagens:', err);
             alert('Erro ao buscar viagens na área selecionada');
@@ -163,6 +164,9 @@ export default function Buscar() {
                                 <div
                                     className="registroItemLista"
                                     key={viagem.id}
+                                    onClick={() => {
+                                        setViagemSelecionada(viagem);
+                                    }}
                                 >
                                     <p><b>Início: </b>{formatarDataHora(viagem.data_viagem)}</p>
                                     <p><b>Último registro: </b>{formatarDataHora(viagem.ultimo_registro)}</p>
@@ -176,7 +180,7 @@ export default function Buscar() {
                     </div>
                 </div>
                 <div className="direitaAlertas">
-                    <MapaBuscar setCoordenadas={setCoordenadas} setDesenhar={setDesenhar}></MapaBuscar>
+                    <MapaBuscar setCoordenadas={setCoordenadas} setDesenhar={setDesenhar} viagem={viagemSelecionada}></MapaBuscar>
                     <div className="divAuxiliarSombra" style={{ width: '70%' }}></div>
                 </div>
             </main>
