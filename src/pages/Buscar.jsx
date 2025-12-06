@@ -5,6 +5,9 @@ import '../styles/buscar.css'
 import api from "../server/api";
 
 import LoadingGif from '../assets/loadingGif.gif'
+import LimparIcon from '../assets/limparIcon.png'
+import DesenharIcon from '../assets/desenho.png'
+import PesquisaIcon from '../assets/pesquisaIcon.png'
 
 export default function Buscar() {
 
@@ -96,7 +99,9 @@ export default function Buscar() {
                 <div className="esquerdaAlertas">
                     <div className="topoEsquerdaAlertasPage">
                         <h2>Buscar</h2>
-                        <p>Encontre motoristas e veículos que passaram em uma área específica</p>
+                        <p>Encontre motoristas e veículos que passaram em uma área específica.
+                            Digite os períodos de tempo e desenhe a área no mapa.
+                        </p>
                         <div className="pesquisaPorData">
                             <input
                                 type="text"
@@ -136,24 +141,30 @@ export default function Buscar() {
                                 }}
                             />
                         </div>
-                        <button className="botaoSelecionarArea" onClick={() => desenhar?.ativarDesenho()}>selecionar área</button>
-                        <button
-                            className="botaoSelecionarArea"
-                            onClick={buscar}
-                            disabled={carregando || !coordenadas}
-                        >Pesquisar</button>
-                        <button
-                            className="botaoSelecionarArea botaoLimpar"
-                            onClick={limpar}
-                        >Limpar</button>
+                        <div className="divControles">
+                            <button
+                                className="botaoSelecionarArea"
+                                onClick={() => desenhar?.ativarDesenho()}>
+                                <img src={DesenharIcon} alt="" className="iconBotao" />
+                                Desenhar
+                            </button>
+                            <button
+                                className="botaoSelecionarArea"
+                                onClick={buscar}
+                                disabled={carregando}
+                            >
+                                <img src={PesquisaIcon} alt="" className="iconBotao" />
+                                Pesquisar
+                            </button>
+                            <button
+                                className="botaoSelecionarArea botaoLimpar"
+                                onClick={limpar}
+                            >
+                                <img src={LimparIcon} alt="" className="iconBotao" />
+                                Limpar
+                            </button>
+                        </div>
                     </div>
-                    {/* <div className="divRegistros">
-                        {carregando && (
-                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <img src={LoadingGif} alt="" style={{ width: '40px', marginTop: '15px' }} />
-                            </div>
-                        )}
-                    </div> */}
                     <div className="divRegistros">
                         {carregando ? (
                             <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -176,7 +187,21 @@ export default function Buscar() {
                                     <p><b>Alertas: </b>{viagem.quantidade_alertas}</p>
                                 </div>
                             ))
-                        ) : null}
+                        ) :
+                            (
+                                <p
+                                    style={{
+                                        width: '100%',
+                                        textAlign: 'center',
+                                        paddingTop: '20px',
+                                        boxSizing: 'border-box',
+                                        color: 'gray'
+                                    }}
+                                >
+                                    Nada a ser exibido
+                                </p>
+                            )
+                        }
                     </div>
                 </div>
                 <div className="direitaAlertas">

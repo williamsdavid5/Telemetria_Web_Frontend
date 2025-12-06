@@ -10,8 +10,9 @@ import { useRef } from 'react';
 import api from '../server/api';
 import './styles/mapa.css';
 import veiculoIcon from '../assets/veiculoIcon.png';
-import pontoIcon from '../assets/pontoIcon.png'
+import pontoIcon from '../assets/pontoIcon.png';
 import startIcon from '../assets/startIcon.png';
+import alertaIcon from '../assets/alertaIcon.png'; // ADICIONADO
 
 import loadingGif from '../assets/loadingGif.gif'
 
@@ -41,6 +42,15 @@ const starPercursotIcon = new L.Icon({
     iconAnchor: [15, 15], // ponto do ícone que estará na coordenada
     popupAnchor: [0, -15], // onde o popup abrirá em relação ao ícone
     className: 'startIcon' // opcional
+});
+
+// ADICIONADO: Ícone de alerta
+const alertaIconObj = new L.Icon({
+    iconUrl: alertaIcon,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+    className: 'iconeAlerta'
 });
 
 function LinhaComSetas({ pontos }) {
@@ -215,6 +225,28 @@ async function compartilharLocalizacao(lat, lng) {
     }
 }
 
+function formatarDataHora(isoString) {
+    const data = new Date(isoString);
+
+    const dia = String(data.getUTCDate()).padStart(2, '0');
+    const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+    const ano = data.getUTCFullYear();
+
+    const hora = String(data.getUTCHours()).padStart(2, '0');
+    const minuto = String(data.getUTCMinutes()).padStart(2, '0');
+
+    return `${dia}/${mes}/${ano} - ${hora}:${minuto}`;
+}
+
+function Centralizar({ coordenadas }) {
+    const map = useMap();
+    useEffect(() => {
+        if (coordenadas) {
+            map.setView(coordenadas, 16);
+        }
+    }, [coordenadas]);
+    return null;
+}
 
 export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
 
@@ -227,32 +259,8 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
     const [carregandoViagem, setCarregandoViagem] = useState(false);
 
     const [registroViagem, setRegistroViagem] = useState(null);
-    // const [posicaoAtual, setPosicaoAtual] = useState([-3.76, -49.67]);
     const [posicaoAtual, setPosicaoAtual] = useState(null);
     const [currentProvider, setCurrentProvider] = useState(mapProviders.default);
-
-    useEffect(() => {
-        async function carregarDetalhesViagem() {
-            if (viagem?.id) {
-                try {
-                    const resposta = await api.get(`/viagens/${viagem.id}`);
-                    setRegistroViagem(resposta.data);
-
-                    if (resposta.data?.registros?.length > 0) {
-                        const ultimo = resposta.data.registros.at(-1);
-                        const coords = [parseFloat(ultimo.latitude), parseFloat(ultimo.longitude)];
-                        setPosicaoAtual(coords);
-                    }
-                } catch (err) {
-                    console.log('Erro ao carregar detalhes da viagem:', err);
-                }
-            } else {
-                setRegistroViagem(null);
-            }
-        }
-
-        carregarDetalhesViagem();
-    }, [viagem]);
 
     useEffect(() => {
         async function carregarDetalhesViagem() {
@@ -280,34 +288,6 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
         carregarDetalhesViagem();
     }, [viagem]);
 
-    function formatarDataHora(isoString) {
-        const data = new Date(isoString);
-
-        const dia = String(data.getUTCDate()).padStart(2, '0');
-        const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
-        const ano = data.getUTCFullYear();
-
-        const hora = String(data.getUTCHours()).padStart(2, '0');
-        const minuto = String(data.getUTCMinutes()).padStart(2, '0');
-
-        return `${dia}/${mes}/${ano} - ${hora}:${minuto}`;
-    }
-
-    function Centralizar({ coordenadas }) {
-        const map = useMap();
-        useEffect(() => {
-            if (coordenadas) {
-                map.setView(coordenadas, 16);
-            }
-        }, [coordenadas]);
-        return null;
-    }
-
-
-    // useEffect(() => {
-    //     console.log("viagem recebida da tela:", viagem);
-    // });
-
     return (
         <div className='mapa'>
             <MapContainer center={posicaoAtual || [-3.76, -49.67]} zoom={15} style={{ height: '100vh', width: '100%' }}>
@@ -330,26 +310,57 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
 
                     return (
                         <>
-
                             {pontosFiltrados.map((ponto, index) => {
                                 const position = [parseFloat(ponto.latitude), parseFloat(ponto.longitude)];
                                 const horario = formatarDataHora(ponto.timestamp);
+                                const velocidade = parseFloat(ponto.velocidade) || 0;
+                                const limite = parseFloat(ponto.limite_aplicado) || 0;
 
-                                const iconToUse = index === 0 ? starPercursotIcon : pontoPercursoIcon;
+                                // Lógica para verificar excesso de velocidade (igual ao MapaPercurso)
+                                const pontoTemAlerta = velocidade > limite;
+
+                                // Define o ícone baseado na verificação de velocidade
+                                const iconToUse = pontoTemAlerta
+                                    ? alertaIconObj // Ícone de alerta para excesso de velocidade
+                                    : (index === 0 ? starPercursotIcon : pontoPercursoIcon);
 
                                 return (
                                     <Marker key={ponto.id || index} position={position} icon={iconToUse}>
                                         <Popup>
                                             <div>
-                                                {index === 0 && (
+                                                {pontoTemAlerta && (
+                                                    <>
+                                                        <b style={{ color: 'red' }}>EXCESSO DE VELOCIDADE</b><br />
+                                                        <b>Velocidade:</b> {velocidade.toFixed(1)} km/h<br />
+                                                        <b>Limite:</b> {limite.toFixed(1)} km/h<br />
+                                                        <b>Diferença:</b> +{(velocidade - limite).toFixed(1)} km/h<br />
+                                                    </>
+                                                )}
+                                                {index === 0 && !pontoTemAlerta && (
                                                     <>
                                                         <b style={{ color: 'green' }}>📍 INÍCIO DO PERCURSO</b><br />
                                                     </>
                                                 )}
-                                                <b>Velocidade:</b> {parseFloat(ponto.velocidade || 0).toFixed(1)} km/h<br />
-                                                <b>Limite:</b> {parseFloat(ponto.limite_aplicado || 0).toFixed(1)} km/h<br />
+                                                {!pontoTemAlerta && index !== 0 && (
+                                                    <>
+                                                        <b>Velocidade:</b> {velocidade.toFixed(1)} km/h<br />
+                                                        <b>Limite:</b> {limite.toFixed(1)} km/h<br />
+                                                    </>
+                                                )}
                                                 <b>Horário:</b> {horario}<br />
-                                                {ponto.chuva ? '🌧️ Chuva detectada' : '☀️ Tempo seco'}
+                                                {ponto.chuva ? '🌧️ Chuva detectada' : '☀️ Tempo seco'} <br />
+                                                <button
+                                                    onClick={() => abrirNoMaps(position[0], position[1])}
+                                                    className='botaoPopUpMapa'
+                                                >
+                                                    Google maps
+                                                </button><br />
+                                                <button
+                                                    onClick={() => compartilharLocalizacao(position[0], position[1])}
+                                                    className='botaoPopUpMapa'
+                                                >
+                                                    Compartilhar localização
+                                                </button>
                                             </div>
                                         </Popup>
                                     </Marker>
@@ -373,6 +384,25 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
                                             <b>Motorista:</b> {registroViagem?.nome_motorista || 'Não informado'}<br />
                                             <b>Veículo:</b> {registroViagem?.modelo_veiculo || 'Não informado'} - {registroViagem?.identificador_veiculo || 'Não informado'}<br />
                                             <b>Última atualização:</b> {formatarDataHora(pontosFiltrados[pontosFiltrados.length - 1].timestamp)}
+                                            <br />
+                                            <button
+                                                onClick={() => abrirNoMaps(
+                                                    parseFloat(pontosFiltrados[pontosFiltrados.length - 1].latitude),
+                                                    parseFloat(pontosFiltrados[pontosFiltrados.length - 1].longitude)
+                                                )}
+                                                className='botaoPopUpMapa'
+                                            >
+                                                Google maps
+                                            </button><br />
+                                            <button
+                                                onClick={() => compartilharLocalizacao(
+                                                    parseFloat(pontosFiltrados[pontosFiltrados.length - 1].latitude),
+                                                    parseFloat(pontosFiltrados[pontosFiltrados.length - 1].longitude)
+                                                )}
+                                                className='botaoPopUpMapa'
+                                            >
+                                                Compartilhar localização
+                                            </button>
                                         </div>
                                     </Popup>
                                 </Marker>
@@ -386,7 +416,6 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
 
                     return (
                         <div key={index}>
-
                             {pontosAlerta?.length > 1 && (
                                 <Polyline
                                     positions={pontosAlerta}
@@ -420,8 +449,6 @@ export default function MapaBuscar({ setCoordenadas, setDesenhar, viagem }) {
                         ))}
                 </select>
             </div>
-
-
 
             {carregandoViagem && (
                 <div className='divCarregando'>

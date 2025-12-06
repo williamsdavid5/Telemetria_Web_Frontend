@@ -16,10 +16,29 @@
 .botaoLimpar {
     background-color: white;
     color: black;
-    /* border: solid 2px black; */
+    border: solid 2px black;
+    box-sizing: border-box;
 }
 
 .botaoLimpar:hover {
     background-color: gray;
     color: white;
+}
+
+.divControles {
+    display: flex;
+    gap: 5px;
+}
+
+.divControles button {
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.iconBotao {
+    height: 18px;
+    margin: 0;
 }
